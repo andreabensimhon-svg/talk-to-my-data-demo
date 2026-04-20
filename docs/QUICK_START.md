@@ -105,6 +105,96 @@ CEO → "Comment va l'Europe ?" → Agent IA → Données Fabric → Réponse cl
 3. Sélectionner toutes les tables
 4. Cliquer **Confirm**
 
+### Créer les relations entre tables (IMPORTANT)
+
+> ⚠️ **Si les relations ne sont pas créées automatiquement**, vous devez les créer manuellement. Sans relations, les mesures DAX ne fonctionneront pas correctement.
+
+#### Comment fonctionnent les Keys (clés) ?
+
+Les **keys** sont des colonnes qui permettent de **lier les tables entre elles** :
+
+```
+┌─────────────────────────────┐         ┌──────────────────────────┐
+│     fact_subscriptions      │         │       dim_customer       │
+├─────────────────────────────┤         ├──────────────────────────┤
+│ subscription_id             │         │ customer_key (UNIQUE)    │◄── Clé primaire
+│ customer_key ───────────────┼────────►│ customer_name            │
+│ offer_key                   │         │ email                    │
+│ monthly_fee                 │         │ segment                  │
+└─────────────────────────────┘         └──────────────────────────┘
+      ↑                                        ↑
+   Clé étrangère                          Clé primaire
+   (peut avoir des doublons)              (valeur unique)
+```
+
+**Principe :**
+- **Table de dimension (dim_)** : contient une **clé primaire** unique (ex: `customer_key = 1` = "Marie Dupont")
+- **Table de faits (fact_)** : contient une **clé étrangère** qui référence la dimension (ex: 10 abonnements avec `customer_key = 1`)
+- La **relation** lie ces deux colonnes → permet de filtrer les faits par dimension
+
+**Exemple concret :**
+> "Combien de revenus pour les clients **Premium** ?"
+> 1. Fabric filtre `dim_customer` où `segment = "Premium"` 
+> 2. Via la relation `customer_key`, il trouve tous les abonnements correspondants dans `fact_subscriptions`
+> 3. Il calcule la somme des `monthly_fee`
+
+**Comment vérifier si les relations existent :**
+1. Cliquer sur le semantic model dans le workspace
+2. Cliquer **Open data model** (icône diagramme en haut à droite)
+3. Vous voyez les tables : s'il y a des **lignes entre elles** = relations OK. Sinon, créer manuellement.
+
+**Créer une relation manuellement :**
+1. Dans la vue diagramme, **glisser** la colonne `customer_key` de `fact_subscriptions`
+2. **Déposer** sur la colonne `customer_key` de `dim_customer`
+3. Une fenêtre s'ouvre : vérifier que c'est **Many to One** → **OK**
+
+**Toutes les relations à créer (12 au total) :**
+
+#### 🔗 Relations de `fact_subscriptions` (4 relations)
+
+| # | Table source | Colonne source | → | Table cible | Colonne cible | Cardinalité |
+|---|--------------|----------------|---|-------------|---------------|-------------|
+| 1 | `fact_subscriptions` | `customer_key` | → | `dim_customer` | `customer_key` | Many to One (*:1) |
+| 2 | `fact_subscriptions` | `geo_key` | → | `dim_geography` | `geo_key` | Many to One (*:1) |
+| 3 | `fact_subscriptions` | `offer_key` | → | `dim_offer` | `offer_key` | Many to One (*:1) |
+| 4 | `fact_subscriptions` | `start_date_key` | → | `dim_date` | `date_key` | Many to One (*:1) |
+
+#### 🔗 Relations de `fact_content_views` (4 relations)
+
+| # | Table source | Colonne source | → | Table cible | Colonne cible | Cardinalité |
+|---|--------------|----------------|---|-------------|---------------|-------------|
+| 5 | `fact_content_views` | `date_key` | → | `dim_date` | `date_key` | Many to One (*:1) |
+| 6 | `fact_content_views` | `customer_key` | → | `dim_customer` | `customer_key` | Many to One (*:1) |
+| 7 | `fact_content_views` | `content_key` | → | `dim_content` | `content_key` | Many to One (*:1) |
+| 8 | `fact_content_views` | `geo_key` | → | `dim_geography` | `geo_key` | Many to One (*:1) |
+
+#### 🔗 Relations de `fact_marketing` (2 relations)
+
+| # | Table source | Colonne source | → | Table cible | Colonne cible | Cardinalité |
+|---|--------------|----------------|---|-------------|---------------|-------------|
+| 9 | `fact_marketing` | `date_key` | → | `dim_date` | `date_key` | Many to One (*:1) |
+| 10 | `fact_marketing` | `geo_key` | → | `dim_geography` | `geo_key` | Many to One (*:1) |
+
+#### 🔗 Relations de `fact_surveys` (2 relations)
+
+| # | Table source | Colonne source | → | Table cible | Colonne cible | Cardinalité |
+|---|--------------|----------------|---|-------------|---------------|-------------|
+| 11 | `fact_surveys` | `date_key` | → | `dim_date` | `date_key` | Many to One (*:1) |
+| 12 | `fact_surveys` | `customer_key` | → | `dim_customer` | `customer_key` | Many to One (*:1) |
+
+> 💡 **Astuce** : Commencez par `fact_subscriptions` (4 relations), c'est la table principale. Ensuite faites les autres tables de faits.
+
+**Schéma en étoile final :**
+```
+                         dim_date
+                            │
+     dim_customer ──── FACT TABLES ──── dim_geography
+                            │
+     dim_content           │            dim_offer
+         │                 │                │
+         └─────────────────┴────────────────┘
+```
+
 ---
 
 ## Étape 5 : Ajouter les mesures DAX (5 min)

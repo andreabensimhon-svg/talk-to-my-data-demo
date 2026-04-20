@@ -1,0 +1,375 @@
+{
+  "name": "sm_ceo_dashboard",
+  "compatibilityLevel": 1567,
+  "model": {
+    "culture": "fr-FR",
+    "dataAccessOptions": {
+      "legacyRedirects": true,
+      "returnErrorValuesAsNull": true
+    },
+    "defaultPowerBIDataSourceVersion": "powerBI_V3",
+    "tables": [
+      {
+        "name": "dim_date",
+        "columns": [
+          { "name": "date_key", "dataType": "int64", "isKey": true, "summarizeBy": "none" },
+          { "name": "date", "dataType": "dateTime", "isKey": false },
+          { "name": "year", "dataType": "int64", "summarizeBy": "none" },
+          { "name": "month", "dataType": "int64", "summarizeBy": "none" },
+          { "name": "month_name", "dataType": "string" },
+          { "name": "quarter", "dataType": "int64", "summarizeBy": "none" },
+          { "name": "week", "dataType": "int64", "summarizeBy": "none" },
+          { "name": "day_of_week", "dataType": "int64", "summarizeBy": "none" },
+          { "name": "day_name", "dataType": "string" },
+          { "name": "is_weekend", "dataType": "boolean" }
+        ],
+        "partitions": [
+          {
+            "name": "dim_date",
+            "source": { "type": "entity", "entityName": "dim_date" }
+          }
+        ]
+      },
+      {
+        "name": "dim_geography",
+        "columns": [
+          { "name": "geo_key", "dataType": "int64", "isKey": true, "summarizeBy": "none" },
+          { "name": "region", "dataType": "string" },
+          { "name": "market_type", "dataType": "string" },
+          { "name": "currency", "dataType": "string" },
+          { "name": "market_weight", "dataType": "double", "summarizeBy": "none" }
+        ],
+        "partitions": [
+          {
+            "name": "dim_geography",
+            "source": { "type": "entity", "entityName": "dim_geography" }
+          }
+        ]
+      },
+      {
+        "name": "dim_offer",
+        "columns": [
+          { "name": "offer_key", "dataType": "int64", "isKey": true, "summarizeBy": "none" },
+          { "name": "offer_name", "dataType": "string" },
+          { "name": "monthly_price", "dataType": "double", "summarizeBy": "none" },
+          { "name": "max_screens", "dataType": "int64", "summarizeBy": "none" },
+          { "name": "hd_available", "dataType": "boolean" },
+          { "name": "4k_available", "dataType": "boolean" },
+          { "name": "offer_weight", "dataType": "double", "summarizeBy": "none" }
+        ],
+        "partitions": [
+          {
+            "name": "dim_offer",
+            "source": { "type": "entity", "entityName": "dim_offer" }
+          }
+        ]
+      },
+      {
+        "name": "dim_content",
+        "columns": [
+          { "name": "content_key", "dataType": "int64", "isKey": true, "summarizeBy": "none" },
+          { "name": "title", "dataType": "string" },
+          { "name": "type", "dataType": "string" },
+          { "name": "genre", "dataType": "string" },
+          { "name": "duration_minutes", "dataType": "int64", "summarizeBy": "sum" },
+          { "name": "production_cost", "dataType": "double", "summarizeBy": "sum" },
+          { "name": "release_date", "dataType": "string" },
+          { "name": "is_original", "dataType": "boolean" }
+        ],
+        "partitions": [
+          {
+            "name": "dim_content",
+            "source": { "type": "entity", "entityName": "dim_content" }
+          }
+        ]
+      },
+      {
+        "name": "dim_customer",
+        "columns": [
+          { "name": "customer_key", "dataType": "int64", "isKey": true, "summarizeBy": "none" },
+          { "name": "acquisition_channel", "dataType": "string" },
+          { "name": "acquisition_date", "dataType": "string" },
+          { "name": "segment", "dataType": "string" },
+          { "name": "age_group", "dataType": "string" },
+          { "name": "device_preference", "dataType": "string" }
+        ],
+        "partitions": [
+          {
+            "name": "dim_customer",
+            "source": { "type": "entity", "entityName": "dim_customer" }
+          }
+        ]
+      },
+      {
+        "name": "fact_subscriptions",
+        "columns": [
+          { "name": "subscription_id", "dataType": "int64", "isKey": true, "summarizeBy": "none" },
+          { "name": "customer_key", "dataType": "int64", "summarizeBy": "none" },
+          { "name": "geo_key", "dataType": "int64", "summarizeBy": "none" },
+          { "name": "offer_key", "dataType": "int64", "summarizeBy": "none" },
+          { "name": "start_date_key", "dataType": "int64", "summarizeBy": "none" },
+          { "name": "status", "dataType": "string" },
+          { "name": "monthly_fee", "dataType": "double", "summarizeBy": "sum", "formatString": "#,##0.00 €" },
+          { "name": "billing_type", "dataType": "string" },
+          { "name": "tenure_months", "dataType": "int64", "summarizeBy": "average" }
+        ],
+        "partitions": [
+          {
+            "name": "fact_subscriptions",
+            "source": { "type": "entity", "entityName": "fact_subscriptions" }
+          }
+        ]
+      },
+      {
+        "name": "fact_content_views",
+        "columns": [
+          { "name": "view_id", "dataType": "int64", "isKey": true, "summarizeBy": "none" },
+          { "name": "date_key", "dataType": "int64", "summarizeBy": "none" },
+          { "name": "customer_key", "dataType": "int64", "summarizeBy": "none" },
+          { "name": "content_key", "dataType": "int64", "summarizeBy": "none" },
+          { "name": "geo_key", "dataType": "int64", "summarizeBy": "none" },
+          { "name": "views", "dataType": "int64", "summarizeBy": "sum" },
+          { "name": "watch_time_minutes", "dataType": "int64", "summarizeBy": "sum" },
+          { "name": "completion_rate", "dataType": "double", "summarizeBy": "average" },
+          { "name": "device", "dataType": "string" }
+        ],
+        "partitions": [
+          {
+            "name": "fact_content_views",
+            "source": { "type": "entity", "entityName": "fact_content_views" }
+          }
+        ]
+      },
+      {
+        "name": "fact_marketing",
+        "columns": [
+          { "name": "campaign_id", "dataType": "int64", "isKey": true, "summarizeBy": "none" },
+          { "name": "date_key", "dataType": "int64", "summarizeBy": "none" },
+          { "name": "geo_key", "dataType": "int64", "summarizeBy": "none" },
+          { "name": "channel", "dataType": "string" },
+          { "name": "spend", "dataType": "double", "summarizeBy": "sum", "formatString": "#,##0.00 €" },
+          { "name": "impressions", "dataType": "int64", "summarizeBy": "sum" },
+          { "name": "clicks", "dataType": "int64", "summarizeBy": "sum" },
+          { "name": "conversions", "dataType": "int64", "summarizeBy": "sum" }
+        ],
+        "partitions": [
+          {
+            "name": "fact_marketing",
+            "source": { "type": "entity", "entityName": "fact_marketing" }
+          }
+        ]
+      },
+      {
+        "name": "fact_surveys",
+        "columns": [
+          { "name": "survey_id", "dataType": "int64", "isKey": true, "summarizeBy": "none" },
+          { "name": "date_key", "dataType": "int64", "summarizeBy": "none" },
+          { "name": "customer_key", "dataType": "int64", "summarizeBy": "none" },
+          { "name": "score", "dataType": "int64", "summarizeBy": "average" },
+          { "name": "category", "dataType": "string" },
+          { "name": "feedback_length", "dataType": "int64", "summarizeBy": "average" }
+        ],
+        "partitions": [
+          {
+            "name": "fact_surveys",
+            "source": { "type": "entity", "entityName": "fact_surveys" }
+          }
+        ]
+      },
+      {
+        "name": "_Measures",
+        "columns": [],
+        "measures": [
+          {
+            "name": "MRR",
+            "expression": "SUMX(FILTER(fact_subscriptions, fact_subscriptions[status] = \"Active\"), fact_subscriptions[monthly_fee])",
+            "formatString": "#,##0.00 €",
+            "displayFolder": "Revenue"
+          },
+          {
+            "name": "ARR",
+            "expression": "[MRR] * 12",
+            "formatString": "#,##0.00 €",
+            "displayFolder": "Revenue"
+          },
+          {
+            "name": "Active Subscribers",
+            "expression": "CALCULATE(DISTINCTCOUNT(fact_subscriptions[customer_key]), fact_subscriptions[status] = \"Active\")",
+            "formatString": "#,##0",
+            "displayFolder": "Subscribers"
+          },
+          {
+            "name": "Total Subscribers",
+            "expression": "DISTINCTCOUNT(fact_subscriptions[customer_key])",
+            "formatString": "#,##0",
+            "displayFolder": "Subscribers"
+          },
+          {
+            "name": "Churned Subscribers",
+            "expression": "CALCULATE(DISTINCTCOUNT(fact_subscriptions[customer_key]), fact_subscriptions[status] = \"Churned\")",
+            "formatString": "#,##0",
+            "displayFolder": "Subscribers"
+          },
+          {
+            "name": "Churn Rate",
+            "expression": "DIVIDE([Churned Subscribers], [Total Subscribers], 0)",
+            "formatString": "0.0%",
+            "displayFolder": "Subscribers"
+          },
+          {
+            "name": "ARPU",
+            "expression": "DIVIDE([MRR], [Active Subscribers], 0)",
+            "formatString": "#,##0.00 €",
+            "displayFolder": "Unit Economics"
+          },
+          {
+            "name": "Total Views",
+            "expression": "SUM(fact_content_views[views])",
+            "formatString": "#,##0",
+            "displayFolder": "Content"
+          },
+          {
+            "name": "Total Watch Time Hours",
+            "expression": "DIVIDE(SUM(fact_content_views[watch_time_minutes]), 60, 0)",
+            "formatString": "#,##0",
+            "displayFolder": "Content"
+          },
+          {
+            "name": "Avg Completion Rate",
+            "expression": "AVERAGE(fact_content_views[completion_rate])",
+            "formatString": "0.0%",
+            "displayFolder": "Content"
+          },
+          {
+            "name": "NPS Score",
+            "expression": "VAR Promoters = CALCULATE(COUNTROWS(fact_surveys), fact_surveys[score] >= 9)\nVAR Detractors = CALCULATE(COUNTROWS(fact_surveys), fact_surveys[score] <= 6)\nVAR Total = COUNTROWS(fact_surveys)\nRETURN (DIVIDE(Promoters, Total, 0) - DIVIDE(Detractors, Total, 0)) * 100",
+            "formatString": "+#,##0;-#,##0;0",
+            "displayFolder": "NPS"
+          },
+          {
+            "name": "Total Marketing Spend",
+            "expression": "SUM(fact_marketing[spend])",
+            "formatString": "#,##0.00 €",
+            "displayFolder": "Marketing"
+          },
+          {
+            "name": "Total Conversions",
+            "expression": "SUM(fact_marketing[conversions])",
+            "formatString": "#,##0",
+            "displayFolder": "Marketing"
+          },
+          {
+            "name": "CAC",
+            "expression": "DIVIDE([Total Marketing Spend], [Total Conversions], 0)",
+            "formatString": "#,##0.00 €",
+            "displayFolder": "Unit Economics"
+          },
+          {
+            "name": "LTV",
+            "expression": "DIVIDE([ARPU] * 12, [Churn Rate], 0)",
+            "formatString": "#,##0.00 €",
+            "displayFolder": "Unit Economics"
+          },
+          {
+            "name": "LTV/CAC Ratio",
+            "expression": "DIVIDE([LTV], [CAC], 0)",
+            "formatString": "0.0",
+            "displayFolder": "Unit Economics"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "_Measures",
+            "source": { "type": "calculated" }
+          }
+        ]
+      }
+    ],
+    "relationships": [
+      {
+        "name": "fact_subscriptions_dim_customer",
+        "fromTable": "fact_subscriptions",
+        "fromColumn": "customer_key",
+        "toTable": "dim_customer",
+        "toColumn": "customer_key"
+      },
+      {
+        "name": "fact_subscriptions_dim_geography",
+        "fromTable": "fact_subscriptions",
+        "fromColumn": "geo_key",
+        "toTable": "dim_geography",
+        "toColumn": "geo_key"
+      },
+      {
+        "name": "fact_subscriptions_dim_offer",
+        "fromTable": "fact_subscriptions",
+        "fromColumn": "offer_key",
+        "toTable": "dim_offer",
+        "toColumn": "offer_key"
+      },
+      {
+        "name": "fact_subscriptions_dim_date",
+        "fromTable": "fact_subscriptions",
+        "fromColumn": "start_date_key",
+        "toTable": "dim_date",
+        "toColumn": "date_key"
+      },
+      {
+        "name": "fact_content_views_dim_date",
+        "fromTable": "fact_content_views",
+        "fromColumn": "date_key",
+        "toTable": "dim_date",
+        "toColumn": "date_key"
+      },
+      {
+        "name": "fact_content_views_dim_customer",
+        "fromTable": "fact_content_views",
+        "fromColumn": "customer_key",
+        "toTable": "dim_customer",
+        "toColumn": "customer_key"
+      },
+      {
+        "name": "fact_content_views_dim_content",
+        "fromTable": "fact_content_views",
+        "fromColumn": "content_key",
+        "toTable": "dim_content",
+        "toColumn": "content_key"
+      },
+      {
+        "name": "fact_content_views_dim_geography",
+        "fromTable": "fact_content_views",
+        "fromColumn": "geo_key",
+        "toTable": "dim_geography",
+        "toColumn": "geo_key"
+      },
+      {
+        "name": "fact_marketing_dim_date",
+        "fromTable": "fact_marketing",
+        "fromColumn": "date_key",
+        "toTable": "dim_date",
+        "toColumn": "date_key"
+      },
+      {
+        "name": "fact_marketing_dim_geography",
+        "fromTable": "fact_marketing",
+        "fromColumn": "geo_key",
+        "toTable": "dim_geography",
+        "toColumn": "geo_key"
+      },
+      {
+        "name": "fact_surveys_dim_date",
+        "fromTable": "fact_surveys",
+        "fromColumn": "date_key",
+        "toTable": "dim_date",
+        "toColumn": "date_key"
+      },
+      {
+        "name": "fact_surveys_dim_customer",
+        "fromTable": "fact_surveys",
+        "fromColumn": "customer_key",
+        "toTable": "dim_customer",
+        "toColumn": "customer_key"
+      }
+    ]
+  }
+}
