@@ -1,0 +1,307 @@
+# ═══════════════════════════════════════════════════════════════
+# CEO Data Agent - Copilot Studio Configuration
+# ═══════════════════════════════════════════════════════════════
+# Import this into Copilot Studio to create the agent topics
+
+kind: BotComponent
+metadata:
+  name: CEO Data Agent
+  description: Executive analytics assistant powered by Fabric Semantic Model
+
+settings:
+  language: en-US
+  greeting: |
+    Hello! I'm your CEO Data Agent, connected directly to your StreamFlow analytics.
+    
+    I can help you with:
+    • Revenue metrics (MRR, ARR, growth trends)
+    • Subscriber analytics and churn analysis
+    • Content performance insights
+    • Marketing ROI and campaign analysis
+    • Regional comparisons
+    
+    What would you like to know?
+
+topics:
+  # ═══════════════════════════════════════
+  # REVENUE TOPICS
+  # ═══════════════════════════════════════
+  - name: Revenue_Overview
+    trigger:
+      phrases:
+        - "revenue"
+        - "MRR"
+        - "ARR"
+        - "monthly recurring revenue"
+        - "annual revenue"
+        - "how much are we making"
+        - "revenue numbers"
+        - "financial overview"
+    action:
+      type: fabric_query
+      semantic_model: CEO-Demo-StreamFlow
+      measures:
+        - MRR
+        - ARR
+        - MRR Growth MoM
+        - MRR Growth YoY
+      response_template: |
+        📊 **Revenue Overview**
+        
+        | Metric | Value |
+        |--------|-------|
+        | MRR | {{MRR}} |
+        | ARR | {{ARR}} |
+        | MoM Growth | {{MRR_Growth_MoM}} |
+        | YoY Growth | {{MRR_Growth_YoY}} |
+        
+        {{#if MRR_Growth_MoM > 0}}
+        ✅ Revenue is trending upward this month.
+        {{else}}
+        ⚠️ Revenue growth needs attention.
+        {{/if}}
+
+  - name: Revenue_Breakdown
+    trigger:
+      phrases:
+        - "revenue by region"
+        - "revenue by offer"
+        - "revenue breakdown"
+        - "where is revenue coming from"
+        - "regional revenue"
+    action:
+      type: fabric_query
+      semantic_model: CEO-Demo-StreamFlow
+      measures:
+        - MRR
+      dimensions:
+        - dim_geography[region]
+      response_template: |
+        🌍 **Revenue by Region**
+        
+        {{#each results}}
+        • **{{region}}**: {{MRR}}
+        {{/each}}
+
+  # ═══════════════════════════════════════
+  # SUBSCRIBER TOPICS
+  # ═══════════════════════════════════════
+  - name: Subscriber_Count
+    trigger:
+      phrases:
+        - "how many subscribers"
+        - "subscriber count"
+        - "total users"
+        - "active subscribers"
+        - "customer base"
+    action:
+      type: fabric_query
+      semantic_model: CEO-Demo-StreamFlow
+      measures:
+        - Active Subscribers
+        - Total Subscribers
+        - Net Subscriber Growth
+      response_template: |
+        👥 **Subscriber Metrics**
+        
+        • **Active Subscribers**: {{Active_Subscribers}}
+        • **Total (incl. churned)**: {{Total_Subscribers}}
+        • **Net Growth**: {{Net_Subscriber_Growth}}
+
+  - name: Churn_Analysis
+    trigger:
+      phrases:
+        - "churn"
+        - "churn rate"
+        - "customer loss"
+        - "cancellations"
+        - "why are customers leaving"
+        - "retention"
+    action:
+      type: fabric_query
+      semantic_model: CEO-Demo-StreamFlow
+      measures:
+        - Churn Rate
+        - Churned Subscribers
+        - Churned MRR
+      response_template: |
+        📉 **Churn Analysis**
+        
+        | Metric | Value |
+        |--------|-------|
+        | Churn Rate | {{Churn_Rate}} |
+        | Churned Subscribers | {{Churned_Subscribers}} |
+        | Lost MRR | {{Churned_MRR}} |
+        
+        {{#if Churn_Rate > 0.025}}
+        ⚠️ Churn rate is above target (2.5%). Consider retention campaigns.
+        {{else}}
+        ✅ Churn rate is within healthy range.
+        {{/if}}
+
+  # ═══════════════════════════════════════
+  # CONTENT TOPICS
+  # ═══════════════════════════════════════
+  - name: Content_Performance
+    trigger:
+      phrases:
+        - "content performance"
+        - "what are people watching"
+        - "top content"
+        - "viewing stats"
+        - "watch time"
+    action:
+      type: fabric_query
+      semantic_model: CEO-Demo-StreamFlow
+      measures:
+        - Total Views
+        - Total Watch Time Hours
+        - Average Completion Rate
+        - Views per Subscriber
+      response_template: |
+        🎬 **Content Performance**
+        
+        • **Total Views**: {{Total_Views}}
+        • **Watch Time**: {{Total_Watch_Time_Hours}} hours
+        • **Avg Completion**: {{Average_Completion_Rate}}
+        • **Views/Subscriber**: {{Views_per_Subscriber}}
+
+  - name: Content_ROI
+    trigger:
+      phrases:
+        - "content ROI"
+        - "content investment"
+        - "content cost"
+        - "original content"
+        - "production cost"
+    action:
+      type: fabric_query
+      semantic_model: CEO-Demo-StreamFlow
+      measures:
+        - Content Cost
+        - Content ROI
+        - Original Content Share
+        - Cost per View
+      response_template: |
+        💰 **Content ROI**
+        
+        • **Total Content Investment**: {{Content_Cost}}
+        • **ROI**: {{Content_ROI}}
+        • **Original Content Share**: {{Original_Content_Share}}
+        • **Cost per View**: {{Cost_per_View}}
+
+  # ═══════════════════════════════════════
+  # MARKETING TOPICS
+  # ═══════════════════════════════════════
+  - name: Marketing_Performance
+    trigger:
+      phrases:
+        - "marketing"
+        - "marketing spend"
+        - "campaign performance"
+        - "acquisition cost"
+        - "CAC"
+        - "CPA"
+    action:
+      type: fabric_query
+      semantic_model: CEO-Demo-StreamFlow
+      measures:
+        - Total Marketing Spend
+        - Total Acquisitions
+        - CPA (Cost per Acquisition)
+        - ROAS (Return on Ad Spend)
+      response_template: |
+        📢 **Marketing Performance**
+        
+        | Metric | Value |
+        |--------|-------|
+        | Total Spend | {{Total_Marketing_Spend}} |
+        | Acquisitions | {{Total_Acquisitions}} |
+        | CPA | {{CPA}} |
+        | ROAS | {{ROAS}} |
+
+  # ═══════════════════════════════════════
+  # REGIONAL ANALYSIS
+  # ═══════════════════════════════════════
+  - name: Regional_Performance
+    trigger:
+      phrases:
+        - "regional performance"
+        - "by region"
+        - "Europe performance"
+        - "Americas"
+        - "Africa"
+        - "Asia Pacific"
+    action:
+      type: fabric_query
+      semantic_model: CEO-Demo-StreamFlow
+      measures:
+        - Active Subscribers
+        - MRR
+        - Churn Rate
+      dimensions:
+        - dim_geography[region]
+      response_template: |
+        🌍 **Regional Performance**
+        
+        {{#each results}}
+        ### {{region}}
+        • Subscribers: {{Active_Subscribers}}
+        • MRR: {{MRR}}
+        • Churn: {{Churn_Rate}}
+        
+        {{/each}}
+
+  # ═══════════════════════════════════════
+  # EXECUTIVE SUMMARY
+  # ═══════════════════════════════════════
+  - name: Executive_Summary
+    trigger:
+      phrases:
+        - "executive summary"
+        - "give me an overview"
+        - "how is the business doing"
+        - "status update"
+        - "dashboard"
+        - "key metrics"
+    action:
+      type: fabric_query
+      semantic_model: CEO-Demo-StreamFlow
+      measures:
+        - MRR
+        - Active Subscribers
+        - Churn Rate
+        - ARPU
+        - LTV to CAC Ratio
+        - NPS Score
+      response_template: |
+        📊 **Executive Summary**
+        
+        | Metric | Value | Status |
+        |--------|-------|--------|
+        | MRR | {{MRR}} | {{MRR_status}} |
+        | Active Subs | {{Active_Subscribers}} | {{Subs_status}} |
+        | Churn Rate | {{Churn_Rate}} | {{Churn_status}} |
+        | ARPU | {{ARPU}} | - |
+        | LTV:CAC | {{LTV_CAC_Ratio}} | {{LTV_status}} |
+        | NPS | {{NPS_Score}} | {{NPS_status}} |
+        
+        **Key Insights:**
+        {{generated_insights}}
+
+  # ═══════════════════════════════════════
+  # ADVANCED / RAG TOPICS (Azure AI Integration)
+  # ═══════════════════════════════════════
+  - name: Strategic_Question
+    trigger:
+      phrases:
+        - "strategy"
+        - "strategic"
+        - "recommendation"
+        - "what should we do"
+        - "action plan"
+        - "competitive analysis"
+    action:
+      type: azure_ai_prompt_flow
+      flow_name: ceo-orchestrator
+      description: Routes to RAG for strategic document analysis

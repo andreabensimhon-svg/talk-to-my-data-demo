@@ -1,0 +1,66 @@
+# ═══════════════════════════════════════════════════════════════
+# CEO Data Agent Demo - Git Ignore
+# ═══════════════════════════════════════════════════════════════
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Generated Data
+data/output/
+*.csv
+!data/sample/*.csv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment
+.env
+.env.local
+.env.*.local
+*.env
+
+# Azure
+.azure/
+azureconfig.json
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints/
+
+# Logs
+*.log
+logs/
+
+# Build
+build/
+dist/
+*.egg-info/
+
+# Secrets (NEVER commit these)
+**/secrets/
+**/credentials/
+*.pem
+*.key
+*.pfx
+*.cer
+
+# Power BI (large files)
+*.pbix

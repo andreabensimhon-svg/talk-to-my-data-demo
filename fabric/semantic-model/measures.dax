@@ -1,0 +1,308 @@
+// ═══════════════════════════════════════════════════════════════
+// StreamFlow CEO Dashboard - DAX Measures
+// ═══════════════════════════════════════════════════════════════
+// Copy these measures into your Fabric Semantic Model
+// ═══════════════════════════════════════════════════════════════
+
+
+// ════════════════════════════════════════════════════════════════
+// REVENUE METRICS
+// ════════════════════════════════════════════════════════════════
+
+MRR = 
+SUMX(
+    FILTER(silver_fact_subscriptions, silver_fact_subscriptions[status] = "Active"),
+    silver_fact_subscriptions[monthly_fee]
+)
+
+ARR = [MRR] * 12
+
+MRR Growth MoM = 
+VAR CurrentMRR = [MRR]
+VAR PreviousMRR = CALCULATE([MRR], DATEADD(bronze_dim_date[date], -1, MONTH))
+RETURN DIVIDE(CurrentMRR - PreviousMRR, PreviousMRR, 0)
+
+MRR Growth YoY = 
+VAR CurrentMRR = [MRR]
+VAR PreviousYearMRR = CALCULATE([MRR], DATEADD(bronze_dim_date[date], -12, MONTH))
+RETURN DIVIDE(CurrentMRR - PreviousYearMRR, PreviousYearMRR, 0)
+
+New MRR = 
+CALCULATE(
+    [MRR],
+    silver_fact_subscriptions[tenure_months] = 1
+)
+
+Expansion MRR = 
+VAR UpgradeRevenue = SUMX(
+    FILTER(silver_fact_subscriptions, silver_fact_subscriptions[billing_type] = "Annual"),
+    silver_fact_subscriptions[monthly_fee] * 0.15
+)
+RETURN UpgradeRevenue
+
+Churned MRR = 
+CALCULATE(
+    SUMX(silver_fact_subscriptions, silver_fact_subscriptions[monthly_fee]),
+    silver_fact_subscriptions[status] = "Churned"
+)
+
+Net New MRR = 
+[New MRR] + [Expansion MRR] - [Churned MRR]
+
+
+// ════════════════════════════════════════════════════════════════
+// SUBSCRIBER METRICS
+// ════════════════════════════════════════════════════════════════
+
+Active Subscribers = 
+CALCULATE(
+    DISTINCTCOUNT(silver_fact_subscriptions[customer_key]),
+    silver_fact_subscriptions[status] = "Active"
+)
+
+Total Subscribers = 
+DISTINCTCOUNT(silver_fact_subscriptions[customer_key])
+
+Churned Subscribers = 
+CALCULATE(
+    DISTINCTCOUNT(silver_fact_subscriptions[customer_key]),
+    silver_fact_subscriptions[status] = "Churned"
+)
+
+Churn Rate = 
+DIVIDE([Churned Subscribers], [Total Subscribers], 0)
+
+New Subscribers = 
+CALCULATE(
+    DISTINCTCOUNT(silver_fact_subscriptions[customer_key]),
+    silver_fact_subscriptions[tenure_months] = 1
+)
+
+Net Subscriber Growth = 
+[New Subscribers] - [Churned Subscribers]
+
+Subscriber Growth Rate = 
+VAR CurrentSubs = [Active Subscribers]
+VAR PreviousSubs = CALCULATE([Active Subscribers], DATEADD(bronze_dim_date[date], -1, MONTH))
+RETURN DIVIDE(CurrentSubs - PreviousSubs, PreviousSubs, 0)
+
+Average Tenure Months = 
+AVERAGE(silver_fact_subscriptions[tenure_months])
+
+
+// ════════════════════════════════════════════════════════════════
+// UNIT ECONOMICS
+// ════════════════════════════════════════════════════════════════
+
+ARPU = 
+DIVIDE([MRR], [Active Subscribers], 0)
+
+Customer Lifetime Value (LTV) = 
+VAR AvgMonthlyRevenue = [ARPU]
+VAR ChurnRate = [Churn Rate]
+VAR AvgLifespan = DIVIDE(1, ChurnRate, 48)
+RETURN AvgMonthlyRevenue * MIN(AvgLifespan, 48)
+
+Customer Acquisition Cost (CAC) = 
+DIVIDE(
+    SUM(silver_fact_marketing[spend]),
+    SUM(silver_fact_marketing[acquisitions]),
+    0
+)
+
+LTV to CAC Ratio = 
+DIVIDE([Customer Lifetime Value (LTV)], [Customer Acquisition Cost (CAC)], 0)
+
+Payback Period Months = 
+DIVIDE([Customer Acquisition Cost (CAC)], [ARPU], 0)
+
+Gross Margin = 
+VAR Revenue = [MRR]
+VAR ContentCost = [Content Cost] / 12
+VAR InfraCost = Revenue * 0.15
+RETURN DIVIDE(Revenue - ContentCost - InfraCost, Revenue, 0)
+
+
+// ════════════════════════════════════════════════════════════════
+// CONTENT METRICS
+// ════════════════════════════════════════════════════════════════
+
+Total Views = 
+SUM(silver_fact_content_views[views])
+
+Total Watch Time Hours = 
+DIVIDE(SUM(silver_fact_content_views[watch_time_minutes]), 60, 0)
+
+Average Completion Rate = 
+AVERAGE(silver_fact_content_views[completion_rate])
+
+Views per Subscriber = 
+DIVIDE([Total Views], [Active Subscribers], 0)
+
+Content Cost = 
+SUMX(
+    VALUES(bronze_dim_content[content_key]),
+    CALCULATE(MAX(bronze_dim_content[production_cost]))
+)
+
+Cost per View = 
+DIVIDE([Content Cost], [Total Views], 0)
+
+Content ROI = 
+VAR EstimatedRevenue = [Total Views] * 0.50
+VAR Cost = [Content Cost]
+RETURN DIVIDE(EstimatedRevenue - Cost, Cost, 0)
+
+Original Content Views = 
+CALCULATE(
+    [Total Views],
+    bronze_dim_content[is_original] = TRUE
+)
+
+Original Content Share = 
+DIVIDE([Original Content Views], [Total Views], 0)
+
+
+// ════════════════════════════════════════════════════════════════
+// MARKETING METRICS
+// ════════════════════════════════════════════════════════════════
+
+Total Marketing Spend = 
+SUM(silver_fact_marketing[spend])
+
+Total Acquisitions = 
+SUM(silver_fact_marketing[acquisitions])
+
+CPA (Cost per Acquisition) = 
+DIVIDE([Total Marketing Spend], [Total Acquisitions], 0)
+
+Total Impressions = 
+SUM(silver_fact_marketing[impressions])
+
+Total Clicks = 
+SUM(silver_fact_marketing[clicks])
+
+CTR (Click Through Rate) = 
+DIVIDE([Total Clicks], [Total Impressions], 0)
+
+Marketing Conversion Rate = 
+DIVIDE([Total Acquisitions], [Total Clicks], 0)
+
+ROAS (Return on Ad Spend) = 
+VAR RevenueFromAcquisitions = [Total Acquisitions] * [Customer Lifetime Value (LTV)]
+RETURN DIVIDE(RevenueFromAcquisitions, [Total Marketing Spend], 0)
+
+Marketing Efficiency Ratio = 
+DIVIDE([MRR], [Total Marketing Spend], 0)
+
+
+// ════════════════════════════════════════════════════════════════
+// NPS & SATISFACTION
+// ════════════════════════════════════════════════════════════════
+
+NPS Score = 
+VAR Promoters = CALCULATE(COUNTROWS(silver_fact_surveys), silver_fact_surveys[score] >= 9)
+VAR Detractors = CALCULATE(COUNTROWS(silver_fact_surveys), silver_fact_surveys[score] <= 6)
+VAR TotalResponses = COUNTROWS(silver_fact_surveys)
+RETURN (DIVIDE(Promoters, TotalResponses, 0) - DIVIDE(Detractors, TotalResponses, 0)) * 100
+
+Promoter Percentage = 
+VAR Promoters = CALCULATE(COUNTROWS(silver_fact_surveys), silver_fact_surveys[score] >= 9)
+VAR TotalResponses = COUNTROWS(silver_fact_surveys)
+RETURN DIVIDE(Promoters, TotalResponses, 0)
+
+Detractor Percentage = 
+VAR Detractors = CALCULATE(COUNTROWS(silver_fact_surveys), silver_fact_surveys[score] <= 6)
+VAR TotalResponses = COUNTROWS(silver_fact_surveys)
+RETURN DIVIDE(Detractors, TotalResponses, 0)
+
+Average Survey Score = 
+AVERAGE(silver_fact_surveys[score])
+
+
+// ════════════════════════════════════════════════════════════════
+// COHORT & RETENTION
+// ════════════════════════════════════════════════════════════════
+
+Retention Rate M1 = 
+VAR CohortSize = COUNTROWS(bronze_dim_customer)
+VAR RetainedM1 = CALCULATE(
+    COUNTROWS(silver_fact_subscriptions),
+    silver_fact_subscriptions[status] = "Active",
+    silver_fact_subscriptions[tenure_months] >= 1
+)
+RETURN DIVIDE(RetainedM1, CohortSize, 0)
+
+Retention Rate M3 = 
+VAR CohortSize = COUNTROWS(bronze_dim_customer)
+VAR RetainedM3 = CALCULATE(
+    COUNTROWS(silver_fact_subscriptions),
+    silver_fact_subscriptions[status] = "Active",
+    silver_fact_subscriptions[tenure_months] >= 3
+)
+RETURN DIVIDE(RetainedM3, CohortSize, 0)
+
+Retention Rate M12 = 
+VAR CohortSize = COUNTROWS(bronze_dim_customer)
+VAR RetainedM12 = CALCULATE(
+    COUNTROWS(silver_fact_subscriptions),
+    silver_fact_subscriptions[status] = "Active",
+    silver_fact_subscriptions[tenure_months] >= 12
+)
+RETURN DIVIDE(RetainedM12, CohortSize, 0)
+
+
+// ════════════════════════════════════════════════════════════════
+// FORMATTING MEASURES (for display)
+// ════════════════════════════════════════════════════════════════
+
+MRR Display = 
+FORMAT([MRR], "€#,##0,.0M")
+
+ARR Display = 
+FORMAT([ARR], "€#,##0,.0M")
+
+Subscribers Display = 
+FORMAT([Active Subscribers], "#,##0,.00M")
+
+Churn Display = 
+FORMAT([Churn Rate], "0.0%")
+
+Growth Indicator = 
+VAR Growth = [MRR Growth MoM]
+RETURN IF(Growth >= 0, "▲ " & FORMAT(Growth, "+0.0%"), "▼ " & FORMAT(Growth, "0.0%"))
+
+MRR Trend Color = 
+IF([MRR Growth MoM] >= 0, "#28A745", "#DC3545")
+
+Churn Status = 
+VAR ChurnRate = [Churn Rate]
+RETURN 
+SWITCH(
+    TRUE(),
+    ChurnRate <= 0.02, "🟢 Healthy",
+    ChurnRate <= 0.03, "🟡 Watch",
+    "🔴 Critical"
+)
+
+
+// ════════════════════════════════════════════════════════════════
+// FORECASTING
+// ════════════════════════════════════════════════════════════════
+
+MRR Forecast Next Month = 
+VAR CurrentMRR = [MRR]
+VAR GrowthRate = [MRR Growth MoM]
+RETURN CurrentMRR * (1 + GrowthRate)
+
+ARR Forecast 12 Months = 
+VAR CurrentARR = [ARR]
+VAR MonthlyGrowth = [MRR Growth MoM]
+RETURN CurrentARR * POWER(1 + MonthlyGrowth, 12)
+
+Subscribers Forecast 12 Months = 
+VAR CurrentSubs = [Active Subscribers]
+VAR GrowthRate = [Subscriber Growth Rate]
+VAR ChurnRate = [Churn Rate]
+VAR NetGrowth = GrowthRate - ChurnRate
+RETURN CurrentSubs * POWER(1 + NetGrowth, 12)
