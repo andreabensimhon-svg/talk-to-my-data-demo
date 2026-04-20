@@ -303,58 +303,174 @@ ARPU = DIVIDE([MRR], [Active Subscribers], 0)
 
 ---
 
-## Étape 6 : Créer les rapports Power BI (5 min)
+## Étape 6 : Créer les rapports Power BI (10 min)
 
 > 💡 **Pourquoi ?** Le rapport Power BI est le **tableau de bord visuel** que le CEO peut consulter à tout moment. C'est la représentation graphique des KPIs.
+
+### 6.1 Créer un nouveau rapport
+
+1. Dans le workspace **CEO-Demo-StreamFlow**
+2. Cliquer sur le semantic model `sm_ceo_dashboard`
+3. En haut, cliquer **Create report** → **Start from scratch**
+4. Une page blanche de rapport s'ouvre
+
+### 6.2 Ajouter les Cards KPI (5 visuels)
+
+Pour chaque KPI, suivre ces étapes :
+
+**Card 1 - MRR :**
+1. Dans le panneau **Visualizations** à droite, cliquer sur l'icône **Card** (rectangle avec un chiffre)
+2. Un visuel vide apparaît sur le canvas
+3. Dans le panneau **Data** à droite, dérouler `fact_subscriptions`
+4. Glisser la mesure **MRR** sur le visuel (ou dans le champ "Fields")
+5. Le chiffre MRR apparaît !
+6. Redimensionner et placer en haut à gauche
+
+**Répéter pour les autres Cards :**
+| Card | Mesure à glisser | Position |
+|------|------------------|----------|
+| Card 2 | `ARR` | Haut, 2ème |
+| Card 3 | `Active Subscribers` | Haut, 3ème |
+| Card 4 | `Churn Rate` | Haut, 4ème |
+| Card 5 | `NPS Score` | Haut, 5ème |
+
+### 6.3 Ajouter le graphique MRR Trend
+
+1. Cliquer sur une zone vide du canvas
+2. Dans **Visualizations**, cliquer sur **Line chart** (icône ligne avec points)
+3. Configuration :
+   - **X-axis** : Glisser `dim_date` → `month` (ou `date_key`)
+   - **Y-axis** : Glisser `MRR`
+4. Le graphique montre l'évolution du MRR dans le temps
+5. Placer sous les Cards, à gauche
+
+### 6.4 Ajouter le graphique Revenue par Région
+
+1. Cliquer sur une zone vide
+2. Choisir **Clustered bar chart** (barres horizontales)
+3. Configuration :
+   - **Y-axis** : Glisser `dim_geography` → `region`
+   - **X-axis** : Glisser `MRR`
+4. Placer à droite du Line chart
+
+### 6.5 Ajouter le tableau Top Content
+
+1. Cliquer sur une zone vide
+2. Choisir **Table** (icône grille)
+3. Glisser :
+   - `dim_content` → `title`
+   - `Total Views`
+4. Placer en bas du rapport
+
+### 6.6 Sauvegarder le rapport
+
+1. **File** → **Save**
+2. Nom : `CEO Executive Dashboard`
+3. Le rapport est maintenant dans le workspace
+
+### 📐 Layout final suggéré
+
+```
+┌─────────┬─────────┬─────────┬─────────┬─────────┐
+│   MRR   │   ARR   │ Active  │  Churn  │   NPS   │
+│  847K€  │ 10.2M€  │  48,234 │   2.1%  │   +42   │
+└─────────┴─────────┴─────────┴─────────┴─────────┘
+┌──────────────────────┬────────────────────────────┐
+│                      │                            │
+│   📈 MRR Trend       │   📊 MRR par Région        │
+│   (Line Chart)       │   (Bar Chart)              │
+│                      │                            │
+└──────────────────────┴────────────────────────────┘
+┌───────────────────────────────────────────────────┐
+│  📋 Top Content (Table)                           │
+│  Title                    | Views                 │
+│  The Crown               | 125,430               │
+│  Breaking News           | 98,234                │
+└───────────────────────────────────────────────────┘
+```
+
+---
+
+## Étape 7 : Créer le Fabric Data Agent (5 min) ⭐
+
+> 💡 **C'est quoi ?** Le **Fabric Data Agent** est un agent IA dédié à votre Lakehouse. Il permet au CEO de poser des questions en langage naturel **directement sur les données brutes**, sans passer par un rapport.
 >
-> **Ce que ça apporte au CEO :**
-> - Vue d'ensemble en un coup d'œil
-> - Tendances visuelles (ça monte ou ça descend ?)
-> - Alertes visuelles (rouge = problème, vert = OK)
-> - Drill-down par région, offre, période...
+> **Différence avec Copilot Power BI :**
+> - **Copilot Power BI** = Questions sur un rapport existant
+> - **Fabric Data Agent** = Questions sur les données du Lakehouse (plus puissant, peut générer du SQL)
 
-1. Dans le workspace, cliquer sur le semantic model `sm_ceo_dashboard`
-2. Cliquer **Create report** → **Start from scratch**
-3. Ajouter les visuels (voir `docs/POWER_BI_VISUALS.md` pour les layouts détaillés) :
+### 7.1 Créer l'Agent
 
-### Dashboard CEO - Visuels recommandés
+1. Dans le workspace **CEO-Demo-StreamFlow**
+2. Cliquer **+ New** → chercher **"Agent"** ou **"Data Agent"**
+3. Sélectionner **Fabric Data Agent**
+4. Nom : `agent_ceo_streamflow`
+5. Cliquer **Create**
 
-**KPIs en haut (5 Cards) :**
+### 7.2 Configurer les sources de données
 
-| Visuel | Mesure | Ce que le CEO voit |
-|--------|--------|-------------------|
-| Card 1 | `MRR` | "On fait 847K€/mois" |
-| Card 2 | `ARR` | "10.2M€ sur l'année" |
-| Card 3 | `Active Subscribers` | "On a 48K clients" |
-| Card 4 | `Churn Rate` | "2.1% partent chaque mois" |
-| Card 5 | `NPS Score` | "Satisfaction = +42" |
+1. Dans l'agent, cliquer **Add data source**
+2. Sélectionner le Lakehouse `lh_streamflow`
+3. Cocher toutes les tables :
+   - ☑️ `dim_date`
+   - ☑️ `dim_geography`
+   - ☑️ `dim_customer`
+   - ☑️ `dim_offer`
+   - ☑️ `dim_content`
+   - ☑️ `fact_subscriptions`
+   - ☑️ `fact_content_views`
+   - ☑️ `fact_marketing`
+   - ☑️ `fact_surveys`
+4. Cliquer **Confirm**
 
-- Drag `MRR` → Card visual
-- Drag `ARR` → Card visual  
-- Drag `Active Subscribers` → Card visual
-- Drag `Churn Rate` → Card visual
-- Drag `NPS Score` → Card visual
+### 7.3 Ajouter les instructions système (optionnel mais recommandé)
 
-**Graphique MRR Trend :**
-> Montre si le revenu monte ou descend sur les 12 derniers mois
+Dans les paramètres de l'agent, ajouter ces instructions :
 
-- Line Chart : Axe X = `dim_date[month]`, Valeur = `MRR`
+```
+Tu es un assistant data pour le CEO de StreamFlow, une plateforme de streaming.
 
-**Revenue par Région :**
-> Identifie les marchés les plus rentables et ceux en difficulté
+Contexte métier :
+- MRR = Monthly Recurring Revenue (revenus mensuels récurrents)
+- ARR = MRR × 12
+- Churn = clients qui résilient leur abonnement
+- NPS = Net Promoter Score (satisfaction client, de -100 à +100)
 
-- Bar Chart : Axe Y = `dim_geography[region]`, Valeur = `MRR`
+Régions : Europe, North America, Latin America, Asia Pacific, Africa
 
-**Top Content :**
-> Montre quel contenu génère le plus d'engagement
+Quand on te demande des KPIs, donne toujours :
+1. Le chiffre actuel
+2. La tendance (hausse/baisse)
+3. Une interprétation business
 
-- Table : `dim_content[title]`, `Total Views`
+Réponds de manière concise et professionnelle, comme si tu parlais à un CEO.
+```
 
-4. **Appliquer le thème premium :**
-   - Menu **View** → **Themes** → **Browse for themes**
-   - Sélectionner `powerbi/theme/streamflow-theme.json`
+### 7.4 Tester l'Agent
 
-5. **Sauvegarder** : File → Save → Nom : `CEO Executive Dashboard`
+Cliquer sur **Chat** et essayer ces questions :
+
+```
+Quel est le MRR total des abonnés actifs ?
+```
+
+```
+Combien d'abonnés avons-nous par région ?
+```
+
+```
+Quels sont les 5 contenus les plus regardés ce mois-ci ?
+```
+
+```
+Quel est le taux de churn par offre ?
+```
+
+### 7.5 Partager l'Agent (optionnel)
+
+1. Cliquer **Share** en haut à droite
+2. Entrer les emails des personnes à inviter
+3. Choisir le niveau d'accès (View, Edit)
 
 ---
 
