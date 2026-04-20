@@ -209,91 +209,89 @@ Les **keys** sont des colonnes qui permettent de **lier les tables entre elles**
 2. Cliquer **Open data model** (icône en haut à droite)
 3. Dans le panneau de gauche, cliquer sur une table (ex: `fact_subscriptions`)
 4. En haut, cliquer **New measure**
-5. Dans la barre de formule, coller la mesure :
+5. Dans la barre de formule, coller la mesure
+6. Appuyer sur **Entrée** pour valider
 
+> ⚠️ **IMPORTANT** : Les noms de tables dans Fabric peuvent être différents (underscores ou espaces). Vérifiez les noms exacts dans le panneau de gauche avant de copier les formules.
+
+---
+
+### Mesures à créer (copier-coller une par une)
+
+#### 1️⃣ MRR (Monthly Recurring Revenue)
 ```dax
 MRR = 
-SUMX(
-    FILTER(fact_subscriptions, fact_subscriptions[status] = "Active"),
-    fact_subscriptions[monthly_fee]
+CALCULATE(
+    SUM(fact_subscriptions[monthly_fee]),
+    fact_subscriptions[status] = "Active"
 )
 ```
 
-6. Appuyer sur **Entrée** pour valider
-7. Répéter pour chaque mesure ci-dessous :
-
-### Mesures essentielles à créer
-
-> 💡 **Ce que chaque mesure signifie pour le business :**
-
-**Revenue :**
-
-| Mesure | Signification métier | Pourquoi le CEO s'en soucie |
-|--------|---------------------|----------------------------|
-| **MRR** | Monthly Recurring Revenue = revenus mensuels récurrents | C'est LE chiffre clé d'un business par abonnement |
-| **ARR** | Annual Recurring Revenue = MRR × 12 | Valorisation de l'entreprise, objectifs annuels |
-
+#### 2️⃣ ARR (Annual Recurring Revenue)
 ```dax
-MRR = 
-SUMX(
-    FILTER(fact_subscriptions, fact_subscriptions[status] = "Active"),
-    fact_subscriptions[monthly_fee]
-)
-
 ARR = [MRR] * 12
 ```
 
-**Subscribers :**
-
-| Mesure | Signification métier | Pourquoi le CEO s'en soucie |
-|--------|---------------------|----------------------------|
-| **Active Subscribers** | Nombre de clients actifs | Taille du business, croissance |
-| **Churn Rate** | % de clients qui partent chaque mois | Santé du business, rétention |
-
+#### 3️⃣ Active Subscribers (Abonnés actifs)
 ```dax
 Active Subscribers = 
 CALCULATE(
-    DISTINCTCOUNT(fact_subscriptions[customer_key]),
+    COUNTROWS(fact_subscriptions),
     fact_subscriptions[status] = "Active"
 )
-
-Churn Rate = 
-DIVIDE(
-    CALCULATE(COUNTROWS(fact_subscriptions), fact_subscriptions[status] = "Churned"),
-    COUNTROWS(fact_subscriptions)
-)
 ```
 
-**Content :**
+#### 4️⃣ Total Subscribers (Total abonnés)
+```dax
+Total Subscribers = COUNTROWS(fact_subscriptions)
+```
 
-| Mesure | Signification métier | Pourquoi le CEO s'en soucie |
-|--------|---------------------|----------------------------|
-| **Total Views** | Nombre de visionnages | Engagement des utilisateurs |
-| **Watch Time** | Heures passées à regarder | Valeur perçue du service |
+#### 5️⃣ Churn Rate (Taux de résiliation)
+```dax
+Churn Rate = 
+VAR ChurnedCount = CALCULATE(
+    COUNTROWS(fact_subscriptions),
+    fact_subscriptions[status] = "Churned"
+)
+VAR TotalCount = COUNTROWS(fact_subscriptions)
+RETURN DIVIDE(ChurnedCount, TotalCount, 0)
+```
 
+#### 6️⃣ Total Views (Nombre de vues)
 ```dax
 Total Views = SUM(fact_content_views[views])
-
-Total Watch Time Hours = DIVIDE(SUM(fact_content_views[watch_time_minutes]), 60)
 ```
 
-**NPS (Net Promoter Score) :**
+#### 7️⃣ Total Watch Time Hours (Heures de visionnage)
+```dax
+Total Watch Time Hours = DIVIDE(SUM(fact_content_views[watch_time_minutes]), 60, 0)
+```
 
-| Mesure | Signification métier | Pourquoi le CEO s'en soucie |
-|--------|---------------------|----------------------------|
-| **NPS Score** | Satisfaction client (-100 à +100) | Prédicteur de croissance future |
+#### 8️⃣ Avg Completion Rate (Taux de complétion moyen)
+```dax
+Avg Completion Rate = AVERAGE(fact_content_views[completion_rate])
+```
 
-> Un NPS > 0 = plus de promoteurs que de détracteurs. NPS > 50 = excellent !
-
+#### 9️⃣ NPS Score (Net Promoter Score)
 ```dax
 NPS Score = 
 VAR Promoters = CALCULATE(COUNTROWS(fact_surveys), fact_surveys[score] >= 9)
 VAR Detractors = CALCULATE(COUNTROWS(fact_surveys), fact_surveys[score] <= 6)
-VAR Total = COUNTROWS(fact_surveys)
-RETURN (DIVIDE(Promoters, Total) - DIVIDE(Detractors, Total)) * 100
+VAR TotalResponses = COUNTROWS(fact_surveys)
+RETURN (DIVIDE(Promoters, TotalResponses, 0) - DIVIDE(Detractors, TotalResponses, 0)) * 100
 ```
 
-> 💡 **Astuce** : Toutes les mesures sont dans `fabric/semantic-model/measures.dax` - copier-coller !
+#### 🔟 ARPU (Average Revenue Per User)
+```dax
+ARPU = DIVIDE([MRR], [Active Subscribers], 0)
+```
+
+---
+
+> 💡 **Dépannage** : Si une mesure ne fonctionne pas :
+> 1. Vérifiez le nom exact de la table (clic sur la table dans le panneau gauche)
+> 2. Vérifiez le nom exact de la colonne (développez la table)
+> 3. Remplacez `fact_subscriptions` par le nom réel si différent
 
 ### Option B : Via Power BI Desktop
 
