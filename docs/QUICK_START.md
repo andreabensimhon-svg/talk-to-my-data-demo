@@ -393,23 +393,80 @@ Pour chaque KPI, suivre ces étapes :
 
 ## Étape 7 : Créer le Fabric Data Agent (5 min) ⭐
 
-> 💡 **C'est quoi ?** Le **Fabric Data Agent** est un agent IA dédié à votre Lakehouse. Il permet au CEO de poser des questions en langage naturel **directement sur les données brutes**, sans passer par un rapport.
->
-> **Différence avec Copilot Power BI :**
-> - **Copilot Power BI** = Questions sur un rapport existant
-> - **Fabric Data Agent** = Questions sur les données du Lakehouse (plus puissant, peut générer du SQL)
+> 💡 **C'est quoi ?** Le **Fabric Data Agent** est un agent IA dédié à vos données. Il permet au CEO de poser des questions en langage naturel et d'obtenir des réponses instantanées.
 
-### 7.1 Créer l'Agent
+### Deux options disponibles :
+
+| Option | Source de données | Avantages | Inconvénients |
+|--------|-------------------|-----------|---------------|
+| **Option A** | Semantic Model | Mesures DAX prêtes (MRR, Churn...) | Moins flexible |
+| **Option B** | Lakehouse | Accès aux données brutes, SQL | Nécessite des instructions détaillées |
+
+---
+
+## Option A : Agent sur Semantic Model (Recommandé pour démo)
+
+> ✅ **Avantage** : Les mesures DAX (MRR, ARR, Churn Rate, NPS) sont déjà calculées. L'agent les comprend directement.
+
+### A.1 Créer l'Agent
 
 1. Dans le workspace **CEO-Demo-StreamFlow**
-2. Cliquer **+ New** → chercher **"Agent"** ou **"Data Agent"**
-3. Sélectionner **Fabric Data Agent**
-4. Nom : `agent_ceo_streamflow`
+2. Cliquer **+ New** → **Data Agent**
+3. Nom : `StreamFlow CEO Assistant`
+4. Description : `Assistant IA pour interroger les données StreamFlow en langage naturel. Posez vos questions sur le MRR, churn, abonnés, NPS et contenus.`
 5. Cliquer **Create**
 
-### 7.2 Configurer les sources de données
+### A.2 Configurer la source de données
 
-1. Dans l'agent, cliquer **Add data source**
+1. Cliquer **Add data source**
+2. Sélectionner le **Semantic Model** `sm_ceo_dashboard`
+3. Cliquer **Confirm**
+
+### A.3 Instructions système (courtes)
+
+```
+Tu es un assistant data pour le CEO de StreamFlow, une plateforme de streaming.
+
+Les mesures disponibles sont :
+- MRR = Monthly Recurring Revenue
+- ARR = Annual Recurring Revenue (MRR × 12)
+- Active Subscribers = nombre d'abonnés actifs
+- Churn Rate = taux de résiliation
+- NPS Score = Net Promoter Score
+- Total Views = nombre de visionnages
+- Total Watch Time Hours = heures de visionnage
+
+Régions : Europe, North America, Latin America, Asia Pacific, Africa
+
+Réponds de manière concise et professionnelle, comme si tu parlais à un CEO.
+```
+
+### A.4 Tester
+
+```
+Quel est le MRR ?
+```
+```
+Montre-moi le churn rate par région
+```
+
+---
+
+## Option B : Agent sur Lakehouse (Plus puissant)
+
+> ⚠️ **Important** : Le Lakehouse contient les données brutes, pas les mesures DAX. Il faut expliquer à l'agent comment calculer les KPIs.
+
+### B.1 Créer l'Agent
+
+1. Dans le workspace **CEO-Demo-StreamFlow**
+2. Cliquer **+ New** → **Data Agent**
+3. Nom : `StreamFlow Data Agent`
+4. Description : `Agent IA dédié au pilotage de StreamFlow. Permet d'obtenir les KPIs clés (MRR, ARR, Churn, NPS), analyser les performances par région, offre ou contenu.`
+5. Cliquer **Create**
+
+### B.2 Configurer les sources de données
+
+1. Cliquer **Add data source**
 2. Sélectionner le Lakehouse `lh_streamflow`
 3. Cocher toutes les tables :
    - ☑️ `dim_date`
@@ -423,50 +480,90 @@ Pour chaque KPI, suivre ces étapes :
    - ☑️ `fact_surveys`
 4. Cliquer **Confirm**
 
-### 7.3 Ajouter les instructions système (optionnel mais recommandé)
+### B.3 Instructions système (DÉTAILLÉES - IMPORTANT)
 
-Dans les paramètres de l'agent, ajouter ces instructions :
+> ⚠️ **Ces instructions sont essentielles** pour que l'agent comprenne comment calculer les KPIs à partir des données brutes.
 
 ```
 Tu es un assistant data pour le CEO de StreamFlow, une plateforme de streaming.
 
-Contexte métier :
-- MRR = Monthly Recurring Revenue (revenus mensuels récurrents)
-- ARR = MRR × 12
-- Churn = clients qui résilient leur abonnement
-- NPS = Net Promoter Score (satisfaction client, de -100 à +100)
+## MAPPING TERMES MÉTIER → COLONNES
 
-Régions : Europe, North America, Latin America, Asia Pacific, Africa
+Quand on te demande le MRR (Monthly Recurring Revenue) :
+→ Calcule : SUM(fact_subscriptions.monthly_fee) WHERE status = 'Active'
 
-Quand on te demande des KPIs, donne toujours :
-1. Le chiffre actuel
-2. La tendance (hausse/baisse)
-3. Une interprétation business
+Quand on te demande l'ARR (Annual Recurring Revenue) :
+→ Calcule : MRR × 12
+
+Quand on te demande le nombre d'abonnés actifs :
+→ Calcule : COUNT(*) FROM fact_subscriptions WHERE status = 'Active'
+
+Quand on te demande le taux de churn :
+→ Calcule : COUNT(status='Churned') / COUNT(*) FROM fact_subscriptions
+
+Quand on te demande le NPS :
+→ Utilise fact_surveys.score
+→ Promoteurs = score >= 9, Détracteurs = score <= 6
+→ NPS = (% Promoteurs - % Détracteurs) × 100
+
+Quand on te demande les vues ou visionnages :
+→ Utilise SUM(fact_content_views.views)
+
+Quand on te demande le temps de visionnage :
+→ Utilise SUM(fact_content_views.watch_time_minutes) / 60 pour les heures
+
+## TABLES DISPONIBLES
+
+- fact_subscriptions : customer_key, offer_key, geo_key, monthly_fee, status (Active/Churned), tenure_months, billing_type
+- fact_content_views : customer_key, content_key, geo_key, date_key, views, watch_time_minutes, completion_rate, device
+- fact_surveys : customer_key, date_key, score (0-10), category
+- fact_marketing : geo_key, date_key, channel, spend, impressions, conversions
+- dim_customer : customer_key, segment, age_group, acquisition_channel, device_preference
+- dim_geography : geo_key, region, country, market_tier
+- dim_offer : offer_key, offer_name, monthly_price, tier
+- dim_content : content_key, title, type, genre, duration_minutes
+- dim_date : date_key, year, quarter, month, month_name
+
+## RELATIONS ENTRE TABLES
+
+- fact_subscriptions.customer_key → dim_customer.customer_key
+- fact_subscriptions.geo_key → dim_geography.geo_key
+- fact_subscriptions.offer_key → dim_offer.offer_key
+- fact_content_views.customer_key → dim_customer.customer_key
+- fact_content_views.content_key → dim_content.content_key
+- fact_content_views.geo_key → dim_geography.geo_key
+- fact_surveys.customer_key → dim_customer.customer_key
+
+## RÉGIONS
+Europe, North America, Latin America, Asia Pacific, Africa
+
+## FORMAT DE RÉPONSE
+1. Le chiffre avec l'unité (€, %, nombre)
+2. Tendance si pertinent
+3. Interprétation business courte
 
 Réponds de manière concise et professionnelle, comme si tu parlais à un CEO.
 ```
 
-### 7.4 Tester l'Agent
-
-Cliquer sur **Chat** et essayer ces questions :
+### B.4 Tester l'Agent
 
 ```
-Quel est le MRR total des abonnés actifs ?
+Quelle est la somme des monthly_fee pour les abonnements actifs ?
 ```
-
+```
+Quel est le MRR ?
+```
 ```
 Combien d'abonnés avons-nous par région ?
 ```
-
 ```
-Quels sont les 5 contenus les plus regardés ce mois-ci ?
+Quels sont les 5 contenus les plus regardés ?
 ```
-
 ```
 Quel est le taux de churn par offre ?
 ```
 
-### 7.5 Partager l'Agent (optionnel)
+### B.5 Partager l'Agent (optionnel)
 
 1. Cliquer **Share** en haut à droite
 2. Entrer les emails des personnes à inviter
