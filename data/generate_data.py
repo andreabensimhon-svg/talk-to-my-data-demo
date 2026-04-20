@@ -283,7 +283,7 @@ def generate_fact_surveys(customer_df, subscriptions_df):
     surveys_list = []
     survey_id = 1
     
-    date_range = pd.date_range(start=CONFIG['start_date'], end=CONFIG['end_date'], freq='Q')
+    date_range = pd.date_range(start=CONFIG['start_date'], end=CONFIG['end_date'], freq='QE')
     
     for quarter_start in date_range:
         quarter_key = int(quarter_start.strftime('%Y%m01'))
